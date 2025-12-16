@@ -6,7 +6,7 @@ use std::rc::Rc;
 
 use cocoa::appkit::{
     NSApp, NSApplication, NSApplicationActivationPolicyRegular, NSBackingStoreBuffered,
-    NSPasteboard, NSView, NSWindow, NSWindowStyleMask,
+    NSPasteboard, NSView, NSWindow,
 };
 use cocoa::base::{id, nil, BOOL, NO, YES};
 use cocoa::foundation::{NSAutoreleasePool, NSPoint, NSRect, NSSize, NSString};
@@ -208,9 +208,7 @@ impl<'a> Window<'a> {
         let ns_window = unsafe {
             let ns_window = NSWindow::alloc(nil).initWithContentRect_styleMask_backing_defer_(
                 rect,
-                NSWindowStyleMask::NSTitledWindowMask
-                    | NSWindowStyleMask::NSClosableWindowMask
-                    | NSWindowStyleMask::NSMiniaturizableWindowMask,
+                options.style_mask(),
                 NSBackingStoreBuffered,
                 NO,
             );
@@ -249,6 +247,64 @@ impl<'a> Window<'a> {
             app.run();
         }
     }
+
+    pub fn open_secondary<H, B>(parent : &Window<'_>, options: WindowOpenOptions, build: B) -> WindowHandle
+    where
+        H: WindowHandler + 'static,
+        B: FnOnce(&mut crate::Window) -> H,
+        B: Send + 'static,
+    {
+        let scaling = match options.scale {
+            WindowScalePolicy::ScaleFactor(scale) => scale,
+            WindowScalePolicy::SystemScaleFactor => 1.0,
+        };
+
+        let window_info = WindowInfo::from_logical_size(options.size, scaling);
+
+        let rect = NSRect::new(
+            NSPoint::new(0.0, 0.0),
+            NSSize::new(window_info.logical_size().width, window_info.logical_size().height),
+        );
+
+        let ns_window = unsafe {
+            let ns_window = NSWindow::alloc(nil).initWithContentRect_styleMask_backing_defer_(
+                rect,
+                options.style_mask(),
+                NSBackingStoreBuffered,
+                NO,
+            );
+            ns_window.center();
+
+            let title = NSString::alloc(nil).init_str(&options.title).autorelease();
+            ns_window.setTitle_(title);
+            ns_window
+        };
+
+        let ns_view = unsafe { create_view(&options) };
+
+        let window_inner = WindowInner {
+            open: Cell::new(true),
+            ns_app: parent.inner.ns_app.clone(),
+            ns_window: Cell::new(Some(ns_window)),
+            ns_view,
+
+            #[cfg(feature = "opengl")]
+            gl_context: options
+                .gl_config
+                .map(|gl_config| Self::create_gl_context(Some(ns_window), ns_view, gl_config)),
+        };
+
+        let result = Self::init(window_inner, window_info, build);
+
+        unsafe {
+            ns_window.setContentView_(ns_view);
+            ns_window.setDelegate_(ns_view);
+            // Note - a call to make_key_and_order_Front() will crash.
+            ns_window.orderFrontRegardless();
+        }
+        result
+    }
+
 
     fn init<H, B>(window_inner: WindowInner, window_info: WindowInfo, build: B) -> WindowHandle
     where

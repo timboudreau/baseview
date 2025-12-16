@@ -87,6 +87,17 @@ impl<'a> Window<'a> {
         platform::Window::open_blocking::<H, B>(options, build)
     }
 
+    #[cfg(target_os = "macos")]
+    /// Open a window logically belonging to the passed parent window
+    pub fn open_secondary<H, B>(parent : &Window<'_>, options: WindowOpenOptions, build: B) -> WindowHandle
+    where
+        H: WindowHandler + 'static,
+        B: FnOnce(&mut crate::Window) -> H,
+        B: Send + 'static,
+    {
+        WindowHandle::new(platform::Window::open_secondary::<H, B>(&parent.window, options, build))
+    }
+
     /// Close the window
     pub fn close(&mut self) {
         self.window.close();

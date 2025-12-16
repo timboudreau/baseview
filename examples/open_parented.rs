@@ -27,6 +27,7 @@ impl ParentWindowHandler {
             // TODO: Add an example that uses the OpenGL context
             #[cfg(feature = "opengl")]
             gl_config: None,
+            mac_os_options: None,
         };
         let child_window =
             Window::open_parented(window, window_open_options, ChildWindowHandler::new);
@@ -127,15 +128,9 @@ impl WindowHandler for ChildWindowHandler {
 }
 
 fn main() {
-    let window_open_options = baseview::WindowOpenOptions {
-        title: "baseview".into(),
-        size: baseview::Size::new(512.0, 512.0),
-        scale: WindowScalePolicy::SystemScaleFactor,
-
-        // TODO: Add an example that uses the OpenGL context
-        #[cfg(feature = "opengl")]
-        gl_config: None,
-    };
+    let window_open_options = baseview::WindowOpenOptions::default()
+        .with_title("baseview")
+        .with_size(baseview::Size::new(512.0, 512.0));
 
     Window::open_blocking(window_open_options, ParentWindowHandler::new);
 }

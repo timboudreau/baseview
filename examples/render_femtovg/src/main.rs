@@ -95,13 +95,10 @@ impl WindowHandler for FemtovgExample {
 }
 
 fn main() {
-    let window_open_options = WindowOpenOptions {
-        title: "Femtovg on Baseview".into(),
-        size: Size::new(512.0, 512.0),
-        scale: WindowScalePolicy::SystemScaleFactor,
-
-        gl_config: Some(GlConfig { alpha_bits: 8, ..GlConfig::default() }),
-    };
+    let window_open_options = WindowOpenOptions::default()
+        .with_title("Femtovg on Baseview")
+        .with_size(Size::new(512.0, 512.0))
+        .with_gl_config(Some(GlConfig { alpha_bits: 8, ..GlConfig::default() }));
 
     Window::open_blocking(window_open_options, FemtovgExample::new);
 }

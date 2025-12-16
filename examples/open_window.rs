@@ -63,15 +63,15 @@ impl WindowHandler for OpenWindowExample {
 }
 
 fn main() {
-    let window_open_options = baseview::WindowOpenOptions {
-        title: "baseview".into(),
-        size: baseview::Size::new(512.0, 512.0),
-        scale: WindowScalePolicy::SystemScaleFactor,
-
-        // TODO: Add an example that uses the OpenGL context
-        #[cfg(feature = "opengl")]
-        gl_config: None,
-    };
+    let window_open_options = baseview::WindowOpenOptions::default()
+        .with_title("baseview")
+        .with_size(baseview::Size::new(512.0, 512.0))
+        .with_mac_os_options(|opts| {
+            opts
+                .resizable(false)
+                .textured(true)
+                .miniaturizable(false)
+        });
 
     let (mut tx, rx) = RingBuffer::new(128);
 
